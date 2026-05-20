@@ -69,17 +69,23 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar
 async function checkConnection() {
   badge.className = 'badge badge-checking';
   badge.textContent = 'Verificando...';
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 6000);
+
   try {
     const res = await fetch(`${CONFIG.backendUrl}/health.php`, {
-      signal: AbortSignal.timeout(5000),
+      signal: controller.signal,
     });
-    if (!res.ok) throw new Error();
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const ok = data.status === 'ok';
     badge.className = `badge badge-${ok ? 'online' : 'offline'}`;
     badge.textContent = ok ? 'Conectado' : 'Sin servicio';
     sendBtn.disabled = !ok;
   } catch {
+    clearTimeout(timer);
     badge.className = 'badge badge-offline';
     badge.textContent = 'Sin conexión';
     sendBtn.disabled = true;

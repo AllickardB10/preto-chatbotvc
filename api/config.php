@@ -5,6 +5,7 @@ define('KNOWLEDGE_DIR', __DIR__ . '/../knowledge/');
 
 $allowed_origins = [
     'https://allickardb10.github.io',
+    'https://app.base10.mx',
     'http://localhost:3000',
     'http://localhost:8080',
 ];
