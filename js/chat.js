@@ -1,63 +1,84 @@
-/* Preto Chatbot — Frontend JS */
+/* Sparky10 · Base 10 Chatbot */
 
-const state = {
-  messages: [],         // { role, content }[]
-  knowledgeFiles: [],   // { name, content }[]
-  isStreaming: false,
+// ── Config (hardcoded, not exposed to UI) ────────────────────────────────────
+const CONFIG = {
+  backendUrl: 'https://app.base10.mx/preto-api',
+  model: 'qwen2.5:7b',
 };
 
-// ── DOM refs ──────────────────────────────────────────────────────────────
-const $ = id => document.getElementById(id);
-const messagesEl   = $('messages');
-const inputEl      = $('user-input');
-const sendBtn      = $('send-btn');
-const newChatBtn   = $('new-chat-btn');
-const kbUpload     = $('kb-upload');
-const kbFilesList  = $('kb-files');
-const kbStatus     = $('kb-status');
-const kbDot        = kbStatus.querySelector('.kb-dot');
-const kbLabel      = kbStatus.querySelector('.kb-label');
-const badge        = $('connection-badge');
-const modeSelect   = $('mode-select');
-const ollamaUrlEl  = $('ollama-url');
-const phpUrlEl     = $('php-url');
-const ollamaLabel  = $('ollama-url-label');
-const phpLabel     = $('php-url-label');
-const modelEl      = $('model-name');
+// ── State ────────────────────────────────────────────────────────────────────
+const state = {
+  messages:       [],   // { role, content }[]
+  knowledgeFiles: [],   // { name, content }[]
+  isStreaming:    false,
+};
 
-// ── Config ─────────────────────────────────────────────────────────────────
-function getConfig() {
-  return {
-    mode: modeSelect.value,
-    ollamaUrl: ollamaUrlEl.value.replace(/\/$/, ''),
-    phpUrl: phpUrlEl.value.replace(/\/$/, ''),
-    model: modelEl.value || 'qwen2.5:7b',
-  };
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const messagesEl    = $('messages');
+const inputEl       = $('user-input');
+const sendBtn       = $('send-btn');
+const newChatBtn    = $('new-chat-btn');
+const kbUpload      = $('kb-upload');
+const kbFilesList   = $('kb-files');
+const kbStatus      = $('kb-status');
+const kbDot         = kbStatus.querySelector('.kb-dot');
+const kbLabel       = kbStatus.querySelector('.kb-label');
+const badge         = $('connection-badge');
+const sidebarToggle = $('sidebar-toggle');
+const sidebarClose  = $('sidebar-close');
+const sidebarOverlay= $('sidebar-overlay');
+const themeToggle   = $('theme-toggle');
+
+// ── Theme ────────────────────────────────────────────────────────────────────
+function getAutoTheme() {
+  const h = new Date().getHours();
+  // Light: 6:00–18:00  |  Dark: 18:00–6:00
+  return (h >= 6 && h < 18) ? 'light' : 'dark';
 }
 
-modeSelect.addEventListener('change', () => {
-  const isDirect = modeSelect.value === 'direct';
-  ollamaLabel.style.display = isDirect ? '' : 'none';
-  phpLabel.style.display    = isDirect ? 'none' : '';
-  checkConnection();
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('sparky10-theme', theme);
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('sparky10-theme');
+  applyTheme(saved ?? getAutoTheme());
+}
+
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'dark' ? 'light' : 'dark');
 });
 
-// ── Connection check ────────────────────────────────────────────────────────
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+function openSidebar()  { document.body.classList.add('sidebar-open'); }
+function closeSidebar() { document.body.classList.remove('sidebar-open'); }
+
+sidebarToggle.addEventListener('click', () => {
+  document.body.classList.contains('sidebar-open') ? closeSidebar() : openSidebar();
+});
+sidebarClose.addEventListener('click', closeSidebar);
+sidebarOverlay.addEventListener('click', closeSidebar);
+
+// Close on Escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
+
+// ── Connection check ──────────────────────────────────────────────────────────
 async function checkConnection() {
   badge.className = 'badge badge-checking';
   badge.textContent = 'Verificando...';
-  const { mode, ollamaUrl, phpUrl } = getConfig();
   try {
-    if (mode === 'direct') {
-      const res = await fetch(`${ollamaUrl}/api/tags`, { signal: AbortSignal.timeout(3000) });
-      if (!res.ok) throw new Error();
-    } else {
-      const res = await fetch(`${phpUrl}/health.php`, { signal: AbortSignal.timeout(3000) });
-      if (!res.ok) throw new Error();
-    }
-    badge.className = 'badge badge-online';
-    badge.textContent = mode === 'direct' ? 'Ollama conectado' : 'Backend conectado';
-    sendBtn.disabled = false;
+    const res = await fetch(`${CONFIG.backendUrl}/health.php`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const ok = data.status === 'ok';
+    badge.className = `badge badge-${ok ? 'online' : 'offline'}`;
+    badge.textContent = ok ? 'Conectado' : 'Sin servicio';
+    sendBtn.disabled = !ok;
   } catch {
     badge.className = 'badge badge-offline';
     badge.textContent = 'Sin conexión';
@@ -65,12 +86,7 @@ async function checkConnection() {
   }
 }
 
-// Re-check when URLs change
-[ollamaUrlEl, phpUrlEl, modelEl].forEach(el => {
-  el.addEventListener('change', checkConnection);
-});
-
-// ── Knowledge base ──────────────────────────────────────────────────────────
+// ── Knowledge base ────────────────────────────────────────────────────────────
 kbUpload.addEventListener('change', async (e) => {
   for (const file of e.target.files) {
     const content = await readFile(file);
@@ -86,7 +102,7 @@ kbUpload.addEventListener('change', async (e) => {
 function readFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result);
+    reader.onload  = e => resolve(e.target.result);
     reader.onerror = reject;
     reader.readAsText(file, 'utf-8');
   });
@@ -97,6 +113,7 @@ function addKbFileItem(name) {
   li.className = 'kb-file-item';
   li.dataset.name = name;
   li.innerHTML = `
+    <span class="kb-file-icon">◆</span>
     <span class="kb-file-name" title="${name}">${name}</span>
     <button class="kb-file-remove" title="Eliminar">×</button>
   `;
@@ -111,23 +128,36 @@ function addKbFileItem(name) {
 function updateKbStatus() {
   const count = state.knowledgeFiles.length;
   kbDot.className = `kb-dot ${count > 0 ? 'active' : 'inactive'}`;
-  kbLabel.textContent = count > 0 ? `${count} archivo${count > 1 ? 's' : ''}` : 'Sin archivos';
+  kbLabel.textContent = count > 0 ? `${count} archivo${count > 1 ? 's' : ''} cargado${count > 1 ? 's' : ''}` : 'Sin archivos cargados';
 }
 
+// ── System prompt ─────────────────────────────────────────────────────────────
 function buildSystemPrompt() {
-  let system = 'Eres Preto, un asistente inteligente útil, claro y conciso. Responde siempre en el mismo idioma que el usuario.';
+  let system = `Eres Sparky10, el asistente virtual oficial de Base 10, una agencia de Data Driven Marketing con sede en México.
+
+REGLAS ESTRICTAS QUE DEBES SEGUIR SIEMPRE:
+1. SOLO responde preguntas relacionadas con Base 10, sus servicios, metodología, frameworks (Visión21, Foresight360), clientes, resultados o la base de conocimiento proporcionada.
+2. Si el usuario pregunta sobre temas NO relacionados con Base 10 (política, entretenimiento, programación general, recetas, etc.), rechaza amablemente y redirige la conversación a Base 10.
+3. Responde siempre en español, de forma clara, profesional y amigable.
+4. Cuando no tengas información suficiente, sugiere contactar a Base 10 en hola@base10.mx.
+5. No inventes servicios, precios, clientes ni datos que no estén en tu base de conocimiento.
+
+Ejemplo de rechazo correcto:
+Usuario: "¿Cómo programo en Python?"
+Sparky10: "Ese tema está fuera de mi área de conocimiento. 😊 Soy el asistente de Base 10 y puedo ayudarte con información sobre nuestros servicios de marketing digital, frameworks como Visión21 o Foresight360, y cómo podemos hacer crecer tu negocio. ¿Te puedo ayudar con algo de Base 10?"`;
+
   if (state.knowledgeFiles.length > 0) {
-    system += '\n\nTienes acceso a la siguiente base de conocimiento. Úsala para responder con precisión:\n\n';
-    system += '--- BASE DE CONOCIMIENTO ---\n';
+    system += '\n\n--- BASE DE CONOCIMIENTO ADICIONAL ---\n';
     state.knowledgeFiles.forEach(f => {
-      system += `\n[Archivo: ${f.name}]\n${f.content.slice(0, 8000)}\n`;
+      system += `\n[${f.name}]\n${f.content.slice(0, 8000)}\n`;
     });
-    system += '\n--- FIN DE BASE DE CONOCIMIENTO ---\n';
+    system += '\n--- FIN DE BASE DE CONOCIMIENTO ---';
   }
+
   return system;
 }
 
-// ── Messages ────────────────────────────────────────────────────────────────
+// ── Messages ──────────────────────────────────────────────────────────────────
 function clearWelcome() {
   const welcome = messagesEl.querySelector('.welcome-message');
   if (welcome) welcome.remove();
@@ -137,16 +167,14 @@ function appendMessage(role, content = '') {
   clearWelcome();
   const div = document.createElement('div');
   div.className = `message ${role}`;
-  const avatarText = role === 'user' ? 'U' : '◆';
   div.innerHTML = `
-    <div class="message-avatar">${avatarText}</div>
+    <div class="message-avatar">${role === 'user' ? 'TÚ' : '10'}</div>
     <div class="message-bubble"></div>
   `;
-  const bubble = div.querySelector('.message-bubble');
-  bubble.textContent = content;
+  div.querySelector('.message-bubble').textContent = content;
   messagesEl.appendChild(div);
   scrollToBottom();
-  return bubble;
+  return div.querySelector('.message-bubble');
 }
 
 function appendTypingIndicator() {
@@ -154,8 +182,10 @@ function appendTypingIndicator() {
   div.className = 'message bot';
   div.id = 'typing-indicator';
   div.innerHTML = `
-    <div class="message-avatar">◆</div>
-    <div class="message-bubble"><div class="typing"><span></span><span></span><span></span></div></div>
+    <div class="message-avatar">10</div>
+    <div class="message-bubble">
+      <div class="typing"><span></span><span></span><span></span></div>
+    </div>
   `;
   messagesEl.appendChild(div);
   scrollToBottom();
@@ -166,77 +196,23 @@ function scrollToBottom() {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-// ── Streaming helpers ────────────────────────────────────────────────────────
-async function streamOllama(bubble) {
-  const { ollamaUrl, model } = getConfig();
-  const systemPrompt = buildSystemPrompt();
-
-  const payload = {
-    model,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      ...state.messages,
-    ],
-    stream: true,
-  };
-
-  const res = await fetch(`${ollamaUrl}/api/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) throw new Error(`Ollama respondió ${res.status}`);
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let fullText = '';
-
-  // Show cursor while streaming
-  const cursor = document.createElement('span');
-  cursor.className = 'cursor';
-  bubble.appendChild(cursor);
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    const lines = decoder.decode(value, { stream: true }).split('\n');
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      try {
-        const json = JSON.parse(line);
-        const token = json.message?.content ?? '';
-        fullText += token;
-        bubble.textContent = fullText;
-        bubble.appendChild(cursor);
-        scrollToBottom();
-      } catch { /* ignore parse errors on partial lines */ }
-    }
-  }
-
-  cursor.remove();
-  return fullText;
-}
-
-async function streamPHP(bubble) {
-  const { phpUrl, model } = getConfig();
-  const systemPrompt = buildSystemPrompt();
-
-  const res = await fetch(`${phpUrl}/chat.php`, {
+// ── Streaming via PHP backend (SSE) ──────────────────────────────────────────
+async function streamResponse(bubble) {
+  const res = await fetch(`${CONFIG.backendUrl}/chat.php`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model,
+      model:    CONFIG.model,
       messages: state.messages,
-      system: systemPrompt,
+      system:   buildSystemPrompt(),
     }),
   });
 
-  if (!res.ok) throw new Error(`Backend respondió ${res.status}`);
+  if (!res.ok) throw new Error(`El servidor respondió ${res.status}`);
 
-  const reader = res.body.getReader();
+  const reader  = res.body.getReader();
   const decoder = new TextDecoder();
-  let fullText = '';
+  let fullText  = '';
 
   const cursor = document.createElement('span');
   cursor.className = 'cursor';
@@ -245,22 +221,21 @@ async function streamPHP(bubble) {
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
+
     const chunk = decoder.decode(value, { stream: true });
-    // PHP backend sends SSE: "data: <token>\n\n"
-    const events = chunk.split('\n\n');
-    for (const event of events) {
-      const dataLine = event.trim();
-      if (!dataLine.startsWith('data:')) continue;
-      const data = dataLine.slice(5).trim();
+    for (const event of chunk.split('\n\n')) {
+      const line = event.trim();
+      if (!line.startsWith('data:')) continue;
+      const data = line.slice(5).trim();
       if (data === '[DONE]') break;
       try {
-        const json = JSON.parse(data);
+        const json  = JSON.parse(data);
         const token = json.token ?? '';
         fullText += token;
         bubble.textContent = fullText;
         bubble.appendChild(cursor);
         scrollToBottom();
-      } catch { /* ignore */ }
+      } catch { /* ignore partial JSON */ }
     }
   }
 
@@ -268,14 +243,14 @@ async function streamPHP(bubble) {
   return fullText;
 }
 
-// ── Send message ────────────────────────────────────────────────────────────
-async function sendMessage() {
-  const text = inputEl.value.trim();
+// ── Send message ──────────────────────────────────────────────────────────────
+async function sendMessage(text) {
+  text = (text ?? inputEl.value).trim();
   if (!text || state.isStreaming) return;
 
-  state.isStreaming = true;
-  sendBtn.disabled = true;
-  inputEl.value = '';
+  state.isStreaming   = true;
+  sendBtn.disabled    = true;
+  inputEl.value       = '';
   autoResize(inputEl);
 
   state.messages.push({ role: 'user', content: text });
@@ -284,32 +259,24 @@ async function sendMessage() {
   const typingEl = appendTypingIndicator();
 
   try {
-    const { mode } = getConfig();
     typingEl.remove();
-    const bubble = appendMessage('bot', '');
-    let fullText;
-
-    if (mode === 'direct') {
-      fullText = await streamOllama(bubble);
-    } else {
-      fullText = await streamPHP(bubble);
-    }
-
+    const bubble   = appendMessage('bot', '');
+    const fullText = await streamResponse(bubble);
     state.messages.push({ role: 'assistant', content: fullText });
   } catch (err) {
     typingEl?.remove();
     const errBubble = appendMessage('bot', '');
-    errBubble.textContent = `Error: ${err.message}. Verifica que Ollama esté corriendo y tenga CORS habilitado.`;
+    errBubble.textContent = `No pude conectarme al servidor. Por favor intenta de nuevo o contacta a hola@base10.mx (${err.message})`;
     errBubble.classList.add('error');
     console.error(err);
   } finally {
     state.isStreaming = false;
-    sendBtn.disabled = false;
+    sendBtn.disabled  = false;
     inputEl.focus();
   }
 }
 
-// ── Input handling ───────────────────────────────────────────────────────────
+// ── Input handling ────────────────────────────────────────────────────────────
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 180) + 'px';
@@ -320,50 +287,53 @@ inputEl.addEventListener('input', () => {
   sendBtn.disabled = !inputEl.value.trim() || state.isStreaming;
 });
 
-inputEl.addEventListener('keydown', (e) => {
+inputEl.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     sendMessage();
   }
 });
 
-sendBtn.addEventListener('click', sendMessage);
+sendBtn.addEventListener('click', () => sendMessage());
 
-newChatBtn.addEventListener('click', () => {
-  state.messages = [];
+// ── Welcome chips ─────────────────────────────────────────────────────────────
+document.addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  sendMessage(chip.dataset.msg);
+});
+
+// ── New chat ──────────────────────────────────────────────────────────────────
+function renderWelcome() {
   messagesEl.innerHTML = `
     <div class="welcome-message">
       <div class="welcome-logo">
-        <svg width="48" height="48" viewBox="0 0 40 40" fill="none">
-          <rect width="40" height="40" rx="10" fill="#ff4a4a"/>
+        <svg width="56" height="56" viewBox="0 0 40 40" fill="none">
+          <rect width="40" height="40" rx="12" fill="#ff4a4a"/>
           <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle"
             font-family="Poppins,sans-serif" font-weight="800" font-size="18" fill="#fff">10</text>
         </svg>
       </div>
-      <h2>Hola, soy Preto</h2>
-      <p>El asistente inteligente de <strong>Base 10</strong>.<br/>
-      Puedo responder sobre nuestros servicios, frameworks y metodología.<br/>
-      También puedes subir tus propios archivos de contexto.</p>
+      <h2>¡Hola! Soy Sparky10</h2>
+      <p>Asistente virtual de <strong>Base 10</strong>.<br/>
+      Estoy aquí para ayudarte con información sobre nuestros servicios,<br/>
+      metodología y soluciones de Data Driven Marketing.</p>
       <div class="welcome-chips">
         <button class="chip" data-msg="¿Qué servicios ofrece Base 10?">¿Qué servicios ofrecen?</button>
         <button class="chip" data-msg="¿Qué es Visión21?">¿Qué es Visión21?</button>
         <button class="chip" data-msg="¿Cómo es el proceso de trabajo de Base 10?">Proceso de trabajo</button>
-        <button class="chip" data-msg="¿Cuáles son los resultados que ha logrado Base 10?">Resultados</button>
+        <button class="chip" data-msg="¿Qué resultados ha logrado Base 10?">Resultados</button>
       </div>
     </div>
   `;
+}
+
+newChatBtn.addEventListener('click', () => {
+  state.messages = [];
+  renderWelcome();
 });
 
-// ── Welcome chips ────────────────────────────────────────────────────────────
-document.addEventListener('click', (e) => {
-  const chip = e.target.closest('.chip');
-  if (!chip) return;
-  inputEl.value = chip.dataset.msg;
-  autoResize(inputEl);
-  sendBtn.disabled = !inputEl.value.trim() || state.isStreaming;
-  inputEl.focus();
-});
-
-// ── Init ─────────────────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────────────────
+initTheme();
 checkConnection();
 inputEl.focus();
