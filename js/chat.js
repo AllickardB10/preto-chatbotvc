@@ -155,7 +155,7 @@ MENSAJE DE RECHAZO (usa este texto exacto cuando la pregunta sea ajena a Base 10
 OTRAS REGLAS:
 - Responde siempre en el mismo idioma que el usuario.
 - No inventes datos, precios ni servicios que no estén en tu base de conocimiento.
-- Si no tienes información suficiente, sugiere contactar a hola@base10.mx.`;`;
+- Si no tienes información suficiente, sugiere contactar a hola@base10.mx.`;
 
   if (state.knowledgeFiles.length > 0) {
     system += '\n\n--- BASE DE CONOCIMIENTO ADICIONAL ---\n';
