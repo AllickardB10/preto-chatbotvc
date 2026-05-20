@@ -300,7 +300,7 @@ async function sendMessage() {
     typingEl?.remove();
     const errBubble = appendMessage('bot', '');
     errBubble.textContent = `Error: ${err.message}. Verifica que Ollama esté corriendo y tenga CORS habilitado.`;
-    errBubble.style.color = '#f87171';
+    errBubble.classList.add('error');
     console.error(err);
   } finally {
     state.isStreaming = false;
@@ -333,12 +333,35 @@ newChatBtn.addEventListener('click', () => {
   state.messages = [];
   messagesEl.innerHTML = `
     <div class="welcome-message">
-      <div class="welcome-icon">◆</div>
+      <div class="welcome-logo">
+        <svg width="48" height="48" viewBox="0 0 40 40" fill="none">
+          <rect width="40" height="40" rx="10" fill="#ff4a4a"/>
+          <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle"
+            font-family="Poppins,sans-serif" font-weight="800" font-size="18" fill="#fff">10</text>
+        </svg>
+      </div>
       <h2>Hola, soy Preto</h2>
-      <p>Tu asistente con base de conocimiento personalizada.<br />
-      Sube archivos en la barra lateral para que pueda ayudarte con tu contexto específico.</p>
+      <p>El asistente inteligente de <strong>Base 10</strong>.<br/>
+      Puedo responder sobre nuestros servicios, frameworks y metodología.<br/>
+      También puedes subir tus propios archivos de contexto.</p>
+      <div class="welcome-chips">
+        <button class="chip" data-msg="¿Qué servicios ofrece Base 10?">¿Qué servicios ofrecen?</button>
+        <button class="chip" data-msg="¿Qué es Visión21?">¿Qué es Visión21?</button>
+        <button class="chip" data-msg="¿Cómo es el proceso de trabajo de Base 10?">Proceso de trabajo</button>
+        <button class="chip" data-msg="¿Cuáles son los resultados que ha logrado Base 10?">Resultados</button>
+      </div>
     </div>
   `;
+});
+
+// ── Welcome chips ────────────────────────────────────────────────────────────
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  inputEl.value = chip.dataset.msg;
+  autoResize(inputEl);
+  sendBtn.disabled = !inputEl.value.trim() || state.isStreaming;
+  inputEl.focus();
 });
 
 // ── Init ─────────────────────────────────────────────────────────────────────

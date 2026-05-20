@@ -3,3 +3,5 @@ knowledge/*.md
 knowledge/*.json
 knowledge/*.pdf
 !knowledge/.gitkeep
+!knowledge/base10-empresa.txt
+!knowledge/base10-servicios.txt

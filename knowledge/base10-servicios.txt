@@ -1,0 +1,41 @@
+SERVICIOS DE BASE 10
+
+--- ESTRATEGIA DIGITAL ---
+Desarrolla planes basados en evidencia, no suposiciones. Alinea objetivos comerciales, comportamiento del consumidor y capacidades tecnológicas para definir rutas de crecimiento medible. Cada estrategia incluye objetivos cuantificables, hipótesis validadas y KPIs accionables.
+
+--- PUBLICIDAD DIGITAL ---
+Utiliza el modelo Visión21 con 21 KPIs para evaluar campañas de punta a punta: awareness, tráfico, ventas, ROAS y rentabilidad. Combina atribución avanzada, optimización continua y eROAS (retorno económico real), garantizando trazabilidad completa de la inversión.
+
+--- CRM & AUTOMATIZACIÓN ---
+Crea sistemas de relación con clientes basados en resultados. Diseña journeys personalizados basados en comportamiento, propensión y valor esperado del cliente. Conecta CRM (Salesforce, HubSpot, Zoho) con analítica predictiva y marketing automation para anticipación en tiempo real.
+
+--- SOCIAL MEDIA ---
+Desarrolla estrategias de contenido con base en data, insights y tendencias de comportamiento digital. Mide impacto, optimiza narrativa y mantiene coherencia entre marca, performance y comunidad.
+
+--- INTELIGENCIA DE DATOS ---
+Transforma datos en decisiones comerciales. Integra fuentes dispersas (medios, CRM, ventas, POS, web) en tableros accionables. Aplica analítica avanzada, modelos predictivos y visualizaciones para entender qué pasó, por qué y qué hacer después.
+
+--- INTELIGENCIA DE NEGOCIOS ---
+Conecta datos con estrategia corporativa. Desarrolla tableros ejecutivos y modelos de proyección alineando decisiones de marketing, ventas y finanzas. Métricas integradas: CAC, CLTV, eROAS, Retención, Margen Neto.
+
+--- CREATIVIDAD & BRANDING ---
+Construye marcas con propósito, identidad y coherencia visual, pero también con métricas. Evalúa cada idea bajo su capacidad de diferenciar, conectar y convertir. Branding con inteligencia comercial.
+
+--- MARKETING DIRECTO ---
+Diseña experiencias físicas personalizadas integrando bases de datos, segmentación avanzada y logística inteligente. Ejecuta desde mailings y kits de bienvenida hasta regalos corporativos y campañas postventa.
+
+--- FRAMEWORKS PROPIETARIOS ---
+
+VISIÓN21:
+Tipo: Tablero ejecutivo de inteligencia comercial.
+Descripción: Integra 21 KPIs estratégicos para visualizar el desempeño completo del funnel en un solo entorno. Conecta con Salesforce, Meta, Google Ads, CRM interno y DMPs bajo arquitectura propietaria.
+Beneficios: Verdad única de negocio, identifica cuellos de botella, alinea Marketing + CRM + Ventas. Visibilidad inmediata de ROI y eROAS real.
+
+FORESIGHT360:
+Tipo: Motor predictivo de segmentación y next-best-action.
+Descripción: Framework predictivo usando IA y machine learning para anticipar comportamiento de clientes. Predice quién comprará, cuándo, qué producto y con qué probabilidad.
+Cómo funciona: Combina analítica avanzada, datos históricos y señales de comportamiento que activan automáticamente la siguiente mejor acción.
+Beneficios: Mayor conversión, reducción de CAC, mejora de retención y CLTV, personalización a escala.
+
+DEMO DISPONIBLE:
+Base 10 ofrece una demostración interactiva del dashboard con las 21 métricas utilizadas. Contactar en hola@base10.mx para agendar.
