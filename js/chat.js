@@ -363,47 +363,45 @@ newChatBtn.addEventListener('click', () => {
 // ── Sparky Peeker ─────────────────────────────────────────────────────────────
 function initSparkyPeeker() {
   const peeker = document.getElementById('sparky-peeker');
+  const bubble = document.getElementById('sparky-bubble');
   if (!peeker) return;
 
-  // [edge-class, bottom, right, left, top]
-  const positions = [
-    { edge: 'from-bottom', style: { bottom: '0',     right: '90px', left: 'auto', top: 'auto' } },
-    { edge: 'from-bottom', style: { bottom: '0',     left: '70px',  right: 'auto', top: 'auto' } },
-    { edge: 'from-right',  style: { right: '0',      bottom: '180px', left: 'auto', top: 'auto' } },
-    { edge: 'from-left',   style: { left: '0',       bottom: '220px', right: 'auto', top: 'auto' } },
-    { edge: 'from-bottom', style: { bottom: '0',     right: '200px', left: 'auto', top: 'auto' } },
+  const messages = [
+    '¡Hola! ¿En qué te puedo ayudar? 👋',
+    '¡Pregúntame sobre Base 10! 😊',
+    '🍅 ¡Toma un tomate! Ahora sí, ¿hablamos?',
+    '¡Soy Sparky10, el robot más amigable! 🤖',
+    '¿Conoces el framework Visión21? 🚀',
+    '¡Base 10 puede hacer crecer tu negocio! 📈',
+    '¿Necesitas una estrategia de marketing? ✨',
+    '¡Aquí estoy, listo para ayudarte! 😄',
   ];
 
   let active = false;
+  let msgIndex = 0;
 
   function peek() {
     if (active) return;
     active = true;
 
-    const pos = positions[Math.floor(Math.random() * positions.length)];
+    if (bubble) {
+      bubble.textContent = messages[msgIndex % messages.length];
+      msgIndex++;
+    }
 
-    // Reset classes and position
-    peeker.className = `sparky-peeker ${pos.edge}`;
-    Object.assign(peeker.style, pos.style);
-
-    // Trigger slide-in on next frame
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      peeker.classList.add('peeking');
+      peeker.classList.add('visible');
     }));
 
-    // Slide out after 3.8 s
     setTimeout(() => {
-      peeker.classList.remove('peeking');
-      // After transition ends, mark as inactive
-      setTimeout(() => { active = false; }, 600);
-    }, 3800);
+      peeker.classList.remove('visible');
+      setTimeout(() => { active = false; }, 700);
+    }, 5000);
 
-    // Schedule next appearance: 18–40 s
-    setTimeout(peek, 18000 + Math.random() * 22000);
+    setTimeout(peek, 15000 + Math.random() * 15000);
   }
 
-  // First appearance after 8 s
-  setTimeout(peek, 8000);
+  setTimeout(peek, 4000);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
