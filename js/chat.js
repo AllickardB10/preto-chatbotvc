@@ -1,10 +1,25 @@
 /* Sparky10 · Base 10 Chatbot */
 
-// ── Config (hardcoded, not exposed to UI) ────────────────────────────────────
+// ── Config ───────────────────────────────────────────────────────────────────
 const CONFIG = {
   backendUrl: 'https://app.base10.mx/preto-api',
   model: 'qwen2.5:7b',
 };
+
+// ── Sparky SVG (shared for avatars) ──────────────────────────────────────────
+const SPARKY_SVG = `<svg viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+  <rect x="37" y="2" width="6" height="14" rx="3" fill="#cc3030"/>
+  <circle cx="40" cy="2" r="6" fill="#ff6b6b"/>
+  <rect x="8" y="14" width="64" height="56" rx="16" fill="#ff4a4a"/>
+  <rect x="12" y="18" width="56" height="18" rx="9" fill="#ff6b6b" opacity="0.35"/>
+  <circle cx="27" cy="38" r="11" fill="white"/>
+  <circle cx="30" cy="38" r="6" fill="#1a0000"/>
+  <circle cx="32" cy="35" r="2.5" fill="white"/>
+  <circle cx="53" cy="38" r="11" fill="white"/>
+  <circle cx="56" cy="38" r="6" fill="#1a0000"/>
+  <circle cx="58" cy="35" r="2.5" fill="white"/>
+  <path d="M26 56 Q40 67 54 56" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+</svg>`;
 
 // ── State ────────────────────────────────────────────────────────────────────
 const state = {
@@ -178,8 +193,9 @@ function appendMessage(role, content = '') {
   clearWelcome();
   const div = document.createElement('div');
   div.className = `message ${role}`;
+  const avatarContent = role === 'user' ? 'TÚ' : SPARKY_SVG;
   div.innerHTML = `
-    <div class="message-avatar">${role === 'user' ? 'TÚ' : '10'}</div>
+    <div class="message-avatar">${avatarContent}</div>
     <div class="message-bubble"></div>
   `;
   div.querySelector('.message-bubble').textContent = content;
@@ -193,7 +209,7 @@ function appendTypingIndicator() {
   div.className = 'message bot';
   div.id = 'typing-indicator';
   div.innerHTML = `
-    <div class="message-avatar">10</div>
+    <div class="message-avatar">${SPARKY_SVG}</div>
     <div class="message-bubble">
       <div class="typing"><span></span><span></span><span></span></div>
     </div>
@@ -344,7 +360,54 @@ newChatBtn.addEventListener('click', () => {
   renderWelcome();
 });
 
+// ── Sparky Peeker ─────────────────────────────────────────────────────────────
+function initSparkyPeeker() {
+  const peeker = document.getElementById('sparky-peeker');
+  if (!peeker) return;
+
+  // [edge-class, bottom, right, left, top]
+  const positions = [
+    { edge: 'from-bottom', style: { bottom: '0',     right: '90px', left: 'auto', top: 'auto' } },
+    { edge: 'from-bottom', style: { bottom: '0',     left: '70px',  right: 'auto', top: 'auto' } },
+    { edge: 'from-right',  style: { right: '0',      bottom: '180px', left: 'auto', top: 'auto' } },
+    { edge: 'from-left',   style: { left: '0',       bottom: '220px', right: 'auto', top: 'auto' } },
+    { edge: 'from-bottom', style: { bottom: '0',     right: '200px', left: 'auto', top: 'auto' } },
+  ];
+
+  let active = false;
+
+  function peek() {
+    if (active) return;
+    active = true;
+
+    const pos = positions[Math.floor(Math.random() * positions.length)];
+
+    // Reset classes and position
+    peeker.className = `sparky-peeker ${pos.edge}`;
+    Object.assign(peeker.style, pos.style);
+
+    // Trigger slide-in on next frame
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      peeker.classList.add('peeking');
+    }));
+
+    // Slide out after 3.8 s
+    setTimeout(() => {
+      peeker.classList.remove('peeking');
+      // After transition ends, mark as inactive
+      setTimeout(() => { active = false; }, 600);
+    }, 3800);
+
+    // Schedule next appearance: 18–40 s
+    setTimeout(peek, 18000 + Math.random() * 22000);
+  }
+
+  // First appearance after 8 s
+  setTimeout(peek, 8000);
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 initTheme();
 checkConnection();
+initSparkyPeeker();
 inputEl.focus();

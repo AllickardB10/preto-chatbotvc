@@ -391,6 +391,46 @@ body {
 
 .input-hint { font-size: 11px; color: var(--text-dim); margin-top: 7px; text-align: center; }
 
+/* ── Bot avatar SVG ── */
+.message.bot .message-avatar {
+  background: none;
+  border: none;
+  padding: 0;
+  overflow: visible;
+}
+.message.bot .message-avatar svg { width: 34px; height: 34px; }
+
+/* ── Sparky Peeker ── */
+.sparky-peeker {
+  position: fixed;
+  width: 72px;
+  z-index: 998;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 16px rgba(255,74,74,0.45));
+  transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 0.35s ease;
+  opacity: 0;
+}
+.sparky-peeker svg { width: 100%; height: auto; display: block; }
+
+/* hidden states per edge */
+.sparky-peeker.from-bottom { transform: translateY(110%); }
+.sparky-peeker.from-right  { transform: translateX(110%); }
+.sparky-peeker.from-left   { transform: translateX(-110%); }
+
+/* visible state — slides in */
+.sparky-peeker.from-bottom.peeking { transform: translateY(38%); opacity: 1; }
+.sparky-peeker.from-right.peeking  { transform: translateX(28%);  opacity: 1; }
+.sparky-peeker.from-left.peeking   { transform: translateX(-28%); opacity: 1; }
+
+/* wiggle on entry */
+@keyframes sparky-wiggle {
+  0%,100% { rotate: 0deg; }
+  25%      { rotate: -6deg; }
+  75%      { rotate: 6deg; }
+}
+.sparky-peeker.peeking { animation: sparky-wiggle 0.6s ease 0.5s 1; }
+
 /* ── Responsive ── */
 @media (max-width: 680px) {
   .messages { padding: 20px 14px; }
@@ -398,4 +438,5 @@ body {
   .message-bubble { max-width: 90%; }
   .welcome-chips { flex-direction: column; align-items: center; }
   .badge { display: none; }
+  .sparky-peeker { width: 56px; }
 }

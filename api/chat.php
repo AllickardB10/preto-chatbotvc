@@ -14,7 +14,20 @@ if (!$body) {
 
 $model    = htmlspecialchars($body['model'] ?? DEFAULT_MODEL, ENT_QUOTES);
 $messages = $body['messages'] ?? [];
-$system   = $body['system'] ?? 'Eres Preto, un asistente útil y conciso.';
+$system   = $body['system'] ?? 'Eres Sparky10, el asistente virtual de Base 10.';
+
+// Auto-load server-side knowledge files and append to system prompt
+$knowledgeFiles = glob(__DIR__ . '/*.txt');
+if ($knowledgeFiles) {
+    $system .= "\n\n--- BASE DE CONOCIMIENTO (SERVIDOR) ---\n";
+    foreach ($knowledgeFiles as $file) {
+        $content = @file_get_contents($file);
+        if ($content) {
+            $system .= "\n[" . basename($file) . "]\n" . substr($content, 0, 8000) . "\n";
+        }
+    }
+    $system .= "--- FIN DE BASE DE CONOCIMIENTO ---";
+}
 
 // Sanitize messages
 $messages = array_map(fn($m) => [
@@ -36,7 +49,6 @@ header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
 header('X-Accel-Buffering: no');
 
-// Open streaming connection to Ollama
 $ctx = stream_context_create([
     'http' => [
         'method'  => 'POST',
