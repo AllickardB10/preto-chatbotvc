@@ -403,20 +403,16 @@ body {
 /* ── Sparky Peeker ── */
 .sparky-peeker {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 88px;
+  bottom: 20px;
+  right: 20px;
+  width: 90px;
   z-index: 998;
   pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  transform: translateY(calc(100% + 80px));
+  filter: drop-shadow(0 8px 28px rgba(255, 74, 74, 0.45));
+  transform: translateY(180px);
   opacity: 0;
   transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1),
               opacity 0.4s ease;
-  filter: drop-shadow(0 8px 28px rgba(255, 74, 74, 0.45));
 }
 .sparky-peeker.visible {
   transform: translateY(0);
@@ -424,8 +420,11 @@ body {
 }
 .sparky-peeker svg { width: 100%; height: auto; display: block; }
 
-/* Speech bubble — anchored to right edge of container so text never clips viewport */
+/* Speech bubble — position:absolute so it never fights flex alignment */
 .sparky-bubble {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
   background: #ffffff;
   color: #222;
   padding: 9px 14px;
@@ -437,9 +436,9 @@ body {
   box-shadow: 0 4px 20px rgba(0,0,0,0.18);
   border: 1.5px solid rgba(255,74,74,0.3);
   white-space: nowrap;
-  align-self: flex-end;
   opacity: 0;
-  transform: scale(0.75) translateY(12px);
+  transform: scale(0.75) translateY(8px);
+  transform-origin: bottom right;
   transition: opacity 0.35s ease 0.5s,
               transform 0.4s cubic-bezier(0.34,1.4,0.64,1) 0.5s;
 }
@@ -466,6 +465,6 @@ body {
   .message-bubble { max-width: 90%; }
   .welcome-chips { flex-direction: column; align-items: center; }
   .badge { display: none; }
-  .sparky-peeker { width: 70px; bottom: 80px; right: 12px; }
+  .sparky-peeker { width: 72px; bottom: 76px; right: 12px; }
   .sparky-bubble { font-size: 11px; padding: 7px 11px; }
 }
