@@ -326,7 +326,7 @@ body {
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
 /* Typing indicator */
-.typing { display: flex; gap: 5px; align-items: center; padding: 4px 0; }
+.typing { display: flex; gap: 5px; align-items: center; padding: 8px 0; }
 .typing span {
   width: 7px; height: 7px; background: var(--primary); border-radius: 50%;
   opacity: 0.6; animation: bounce 1.2s infinite;

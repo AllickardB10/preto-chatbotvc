@@ -123,12 +123,9 @@ function appendTypingIndicator() {
   const div = document.createElement('div');
   div.className = 'message bot';
   div.id = 'typing-indicator';
-  div.innerHTML = `
-    <div class="message-avatar">${SPARKY_SVG}</div>
-    <div class="message-bubble">
-      <div class="typing"><span></span><span></span><span></span></div>
-    </div>
-  `;
+  // No whitespace inside .message-bubble — whitespace nodes create anonymous
+  // block boxes that inherit line-height and inflate the bubble height.
+  div.innerHTML = `<div class="message-avatar">${SPARKY_SVG}</div><div class="message-bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
   messagesEl.appendChild(div);
   scrollToBottom();
   return div;
