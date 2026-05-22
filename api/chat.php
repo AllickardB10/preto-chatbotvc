@@ -14,20 +14,29 @@ if (!$body) {
 
 $model    = htmlspecialchars($body['model'] ?? DEFAULT_MODEL, ENT_QUOTES);
 $messages = $body['messages'] ?? [];
-$system   = $body['system'] ?? 'Eres Sparky10, el asistente virtual de Base 10.';
 
-// Auto-load server-side knowledge files and append to system prompt
-// Limit per-file to 3500 chars to keep the prompt short and inference fast
+// System prompt built entirely server-side — client never sends it.
+// Keeping it short = fewer tokens to prefill = faster first response.
+// Ollama KV-caches this prefix, so only the first request pays the prefill cost.
+$system = 'Eres Sparky10 (o Sparky), el asistente virtual de Base 10, agencia de Data Driven Marketing en México.
+
+REGLA ÚNICA: Solo responde sobre Base 10. Si la pregunta es ajena, di exactamente:
+"Solo puedo ayudarte con temas relacionados a Base 10. ¿Tienes alguna pregunta sobre nuestros servicios, metodología o cómo podemos apoyar tu negocio?"
+
+- Responde en el idioma del usuario.
+- No inventes datos ni precios. Para más info: hola@base10.mx';
+
+// Append server-side knowledge files (limit per file keeps tokens low for speed)
 $knowledgeFiles = glob(__DIR__ . '/*.txt');
 if ($knowledgeFiles) {
-    $system .= "\n\n--- BASE DE CONOCIMIENTO ---\n";
+    $system .= "\n\n=== BASE DE CONOCIMIENTO ===\n";
     foreach ($knowledgeFiles as $file) {
         $content = @file_get_contents($file);
         if ($content) {
-            $system .= "\n[" . basename($file) . "]\n" . substr($content, 0, 3500) . "\n";
+            $system .= substr($content, 0, 2000) . "\n---\n";
         }
     }
-    $system .= "--- FIN DE BASE DE CONOCIMIENTO ---";
+    $system .= "=== FIN ===";
 }
 
 // Sanitize messages
@@ -36,15 +45,14 @@ $messages = array_map(fn($m) => [
     'content' => substr(strip_tags($m['content'] ?? ''), 0, 32000),
 ], $messages);
 
-// Prepend system message
 array_unshift($messages, ['role' => 'system', 'content' => $system]);
 
 $payload = json_encode([
-    'model'       => $model,
-    'messages'    => $messages,
-    'stream'      => true,
-    'keep_alive'  => -1,
-    'options'     => [
+    'model'      => $model,
+    'messages'   => $messages,
+    'stream'     => true,
+    'keep_alive' => -1,
+    'options'    => [
         'num_predict' => 500,
         'num_thread'  => 16,
         'num_ctx'     => 2048,

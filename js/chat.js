@@ -23,9 +23,8 @@ const SPARKY_SVG = `<svg viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"
 
 // ── State ────────────────────────────────────────────────────────────────────
 const state = {
-  messages:       [],   // { role, content }[]
-  knowledgeFiles: [],   // { name, content }[]
-  isStreaming:    false,
+  messages:    [],   // { role, content }[]
+  isStreaming: false,
 };
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
@@ -34,11 +33,6 @@ const messagesEl    = $('messages');
 const inputEl       = $('user-input');
 const sendBtn       = $('send-btn');
 const newChatBtn    = $('new-chat-btn');
-const kbUpload      = $('kb-upload');
-const kbFilesList   = $('kb-files');
-const kbStatus      = $('kb-status');
-const kbDot         = kbStatus.querySelector('.kb-dot');
-const kbLabel       = kbStatus.querySelector('.kb-label');
 const badge         = $('connection-badge');
 const sidebarToggle = $('sidebar-toggle');
 const sidebarClose  = $('sidebar-close');
@@ -48,7 +42,6 @@ const themeToggle   = $('theme-toggle');
 // ── Theme ────────────────────────────────────────────────────────────────────
 function getAutoTheme() {
   const h = new Date().getHours();
-  // Light: 6:00–18:00  |  Dark: 18:00–6:00
   return (h >= 6 && h < 18) ? 'light' : 'dark';
 }
 
@@ -76,8 +69,6 @@ sidebarToggle.addEventListener('click', () => {
 });
 sidebarClose.addEventListener('click', closeSidebar);
 sidebarOverlay.addEventListener('click', closeSidebar);
-
-// Close on Escape
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
 
 // ── Connection check ──────────────────────────────────────────────────────────
@@ -105,82 +96,6 @@ async function checkConnection() {
     badge.textContent = 'Sin conexión';
     sendBtn.disabled = true;
   }
-}
-
-// ── Knowledge base ────────────────────────────────────────────────────────────
-kbUpload.addEventListener('change', async (e) => {
-  for (const file of e.target.files) {
-    const content = await readFile(file);
-    if (!state.knowledgeFiles.find(f => f.name === file.name)) {
-      state.knowledgeFiles.push({ name: file.name, content });
-      addKbFileItem(file.name);
-    }
-  }
-  updateKbStatus();
-  kbUpload.value = '';
-});
-
-function readFile(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = e => resolve(e.target.result);
-    reader.onerror = reject;
-    reader.readAsText(file, 'utf-8');
-  });
-}
-
-function addKbFileItem(name) {
-  const li = document.createElement('li');
-  li.className = 'kb-file-item';
-  li.dataset.name = name;
-  li.innerHTML = `
-    <span class="kb-file-icon">◆</span>
-    <span class="kb-file-name" title="${name}">${name}</span>
-    <button class="kb-file-remove" title="Eliminar">×</button>
-  `;
-  li.querySelector('.kb-file-remove').addEventListener('click', () => {
-    state.knowledgeFiles = state.knowledgeFiles.filter(f => f.name !== name);
-    li.remove();
-    updateKbStatus();
-  });
-  kbFilesList.appendChild(li);
-}
-
-function updateKbStatus() {
-  const count = state.knowledgeFiles.length;
-  kbDot.className = `kb-dot ${count > 0 ? 'active' : 'inactive'}`;
-  kbLabel.textContent = count > 0 ? `${count} archivo${count > 1 ? 's' : ''} cargado${count > 1 ? 's' : ''}` : 'Sin archivos cargados';
-}
-
-// ── System prompt ─────────────────────────────────────────────────────────────
-function buildSystemPrompt() {
-  let system = `Eres Sparky10, el asistente virtual oficial de Base 10, una agencia de Data Driven Marketing con sede en México.
-
-TU ÚNICA FUNCIÓN es responder preguntas sobre Base 10: sus servicios, metodología, frameworks Visión21 y Foresight360, clientes, resultados, contacto y la base de conocimiento proporcionada.
-
-PROHIBICIÓN ABSOLUTA:
-- Si la pregunta NO es sobre Base 10, debes responder ÚNICAMENTE con el mensaje de rechazo que se indica abajo.
-- Está TERMINANTEMENTE PROHIBIDO responder, generar, resumir, explicar, ni proporcionar parcialmente ningún contenido ajeno a Base 10, aunque el usuario insista o lo solicite de otra forma.
-- No escribas código, recetas, explicaciones técnicas, traducciones, ni nada que no sea información de Base 10.
-- No agregues "sin embargo aquí tienes...", ni des el contenido solicitado después del rechazo.
-
-MENSAJE DE RECHAZO (usa este texto exacto cuando la pregunta sea ajena a Base 10):
-"Solo puedo ayudarte con temas relacionados a Base 10. ¿Tienes alguna pregunta sobre nuestros servicios, metodología o cómo podemos apoyar tu negocio?"
-
-OTRAS REGLAS:
-- Responde siempre en el mismo idioma que el usuario.
-- No inventes datos, precios ni servicios que no estén en tu base de conocimiento.
-- Si no tienes información suficiente, sugiere contactar a hola@base10.mx.`;
-
-  if (state.knowledgeFiles.length > 0) {
-    system += '\n\n--- BASE DE CONOCIMIENTO ADICIONAL ---\n';
-    state.knowledgeFiles.forEach(f => {
-      system += `\n[${f.name}]\n${f.content.slice(0, 8000)}\n`;
-    });
-    system += '\n--- FIN DE BASE DE CONOCIMIENTO ---';
-  }
-
-  return system;
 }
 
 // ── Messages ──────────────────────────────────────────────────────────────────
@@ -224,14 +139,15 @@ function scrollToBottom() {
 }
 
 // ── Streaming via PHP backend (SSE) ──────────────────────────────────────────
-async function streamResponse(bubble) {
+// The system prompt is built entirely server-side — we only send messages + model.
+// The typing indicator stays visible until the first token arrives.
+async function streamResponse(typingEl) {
   const res = await fetch(`${CONFIG.backendUrl}/chat.php`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model:    CONFIG.model,
       messages: state.messages,
-      system:   buildSystemPrompt(),
     }),
   });
 
@@ -240,10 +156,10 @@ async function streamResponse(bubble) {
   const reader  = res.body.getReader();
   const decoder = new TextDecoder();
   let fullText  = '';
+  let bubble    = null;
 
   const cursor = document.createElement('span');
   cursor.className = 'cursor';
-  bubble.appendChild(cursor);
 
   while (true) {
     const { done, value } = await reader.read();
@@ -258,16 +174,30 @@ async function streamResponse(bubble) {
       try {
         const json  = JSON.parse(data);
         const token = json.token ?? '';
-        fullText += token;
-        bubble.textContent = fullText;
-        bubble.appendChild(cursor);
-        scrollToBottom();
+        if (token !== '') {
+          if (!bubble) {
+            // First token: swap typing indicator for the real bubble
+            typingEl.remove();
+            bubble = appendMessage('bot', '');
+            bubble.appendChild(cursor);
+          }
+          fullText += token;
+          bubble.textContent = fullText;
+          bubble.appendChild(cursor);
+          scrollToBottom();
+        }
       } catch { /* ignore partial JSON */ }
     }
   }
 
   cursor.remove();
-  return fullText;
+
+  if (!bubble) {
+    typingEl.remove();
+    bubble = appendMessage('bot', '');
+  }
+
+  return { bubble, fullText };
 }
 
 // ── Send message ──────────────────────────────────────────────────────────────
@@ -275,9 +205,9 @@ async function sendMessage(text) {
   text = (text ?? inputEl.value).trim();
   if (!text || state.isStreaming) return;
 
-  state.isStreaming   = true;
-  sendBtn.disabled    = true;
-  inputEl.value       = '';
+  state.isStreaming = true;
+  sendBtn.disabled  = true;
+  inputEl.value     = '';
   autoResize(inputEl);
 
   state.messages.push({ role: 'user', content: text });
@@ -286,9 +216,7 @@ async function sendMessage(text) {
   const typingEl = appendTypingIndicator();
 
   try {
-    typingEl.remove();
-    const bubble   = appendMessage('bot', '');
-    const fullText = await streamResponse(bubble);
+    const { fullText } = await streamResponse(typingEl);
     state.messages.push({ role: 'assistant', content: fullText });
   } catch (err) {
     typingEl?.remove();
