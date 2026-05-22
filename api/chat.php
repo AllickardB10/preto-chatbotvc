@@ -46,6 +46,8 @@ $payload = json_encode([
     'keep_alive'  => -1,
     'options'     => [
         'num_predict' => 500,
+        'num_thread'  => 16,
+        'num_ctx'     => 2048,
         'temperature' => 0.6,
     ],
 ]);

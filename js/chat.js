@@ -3,7 +3,7 @@
 // ── Config ───────────────────────────────────────────────────────────────────
 const CONFIG = {
   backendUrl: 'https://app.base10.mx/preto-api',
-  model: 'qwen2.5:7b',
+  model: 'qwen2.5:1.5b',
 };
 
 // ── Sparky SVG (shared for avatars) ──────────────────────────────────────────
