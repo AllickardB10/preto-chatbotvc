@@ -17,13 +17,14 @@ $messages = $body['messages'] ?? [];
 $system   = $body['system'] ?? 'Eres Sparky10, el asistente virtual de Base 10.';
 
 // Auto-load server-side knowledge files and append to system prompt
+// Limit per-file to 3500 chars to keep the prompt short and inference fast
 $knowledgeFiles = glob(__DIR__ . '/*.txt');
 if ($knowledgeFiles) {
-    $system .= "\n\n--- BASE DE CONOCIMIENTO (SERVIDOR) ---\n";
+    $system .= "\n\n--- BASE DE CONOCIMIENTO ---\n";
     foreach ($knowledgeFiles as $file) {
         $content = @file_get_contents($file);
         if ($content) {
-            $system .= "\n[" . basename($file) . "]\n" . substr($content, 0, 8000) . "\n";
+            $system .= "\n[" . basename($file) . "]\n" . substr($content, 0, 3500) . "\n";
         }
     }
     $system .= "--- FIN DE BASE DE CONOCIMIENTO ---";
@@ -39,9 +40,14 @@ $messages = array_map(fn($m) => [
 array_unshift($messages, ['role' => 'system', 'content' => $system]);
 
 $payload = json_encode([
-    'model'    => $model,
-    'messages' => $messages,
-    'stream'   => true,
+    'model'       => $model,
+    'messages'    => $messages,
+    'stream'      => true,
+    'keep_alive'  => -1,
+    'options'     => [
+        'num_predict' => 500,
+        'temperature' => 0.6,
+    ],
 ]);
 
 // SSE headers
@@ -54,7 +60,7 @@ $ctx = stream_context_create([
         'method'  => 'POST',
         'header'  => "Content-Type: application/json\r\n",
         'content' => $payload,
-        'timeout' => 120,
+        'timeout' => 300,
     ],
 ]);
 
